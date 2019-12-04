@@ -9,40 +9,44 @@ enum matrixType{
     randomType
 };
 
-template <class T>
+template <class C>
 class Matrix{
     private:
-        T** ptr;
+        C** ptr;
         int matrixRow;
         int matrixColumn;
         matrixType type;
     public:
         Matrix();
-        Matrix(int , int , T);
+        Matrix(int , int , C);
         Matrix(int , int , char);
-        T reach(int , int);
+        C reach(int , int);
         void resize(int , int);
         void print() const;
-        void print(string) const;
-        Matrix operator+ (Matrix);
+        void print(string);
+        Matrix operator+ (Matrix&);
         Matrix operator+ (int);
-        Matrix operator- (Matrix);
+        Matrix operator- (Matrix&);
         Matrix operator- (int);
-        Matrix operator* (Matrix);
+        Matrix operator* (Matrix&);
         Matrix operator* (int);
         Matrix operator/ (int);
         Matrix operator% (int);
         Matrix operator^ (int);
+        Matrix T();
+        Matrix emul(Matrix&);
+        Matrix inv();
+        double det();
 };
 
-template <class T>
-T Matrix<T>::reach(int row , int column){
+template <class C>
+C Matrix<C>::reach(int row , int column){
     return (this->ptr)[row][column];
 }
 
 
-template <class T>
-Matrix<T>::Matrix(){
+template <class C>
+Matrix<C>::Matrix(){
     this->ptr = new int*[10];
     for(int i = 0 ; i < 10; i++){
         this->ptr[i] = new int[10];
@@ -56,11 +60,11 @@ Matrix<T>::Matrix(){
     }
 }
 
-template <class T>
-Matrix<T>::Matrix(int row , int column , T value){
-    this->ptr = new T*[row];
+template <class C>
+Matrix<C>::Matrix(int row , int column , C value){
+    this->ptr = new C*[row];
     for(int i = 0; i < row ; i++){
-        this->ptr[i] = new T[column];
+        this->ptr[i] = new C[column];
     }
     this->matrixRow = row;
     this->matrixColumn = column;
@@ -72,11 +76,11 @@ Matrix<T>::Matrix(int row , int column , T value){
     }
 }
 
-template <class T>
-Matrix<T>::Matrix(int row , int column , char value){
-    this->ptr = new T*[row];
+template <class C>
+Matrix<C>::Matrix(int row , int column , char value){
+    this->ptr = new C*[row];
     for(int i = 0; i < row ; i++){
-        this->ptr[i] = new T[column];
+        this->ptr[i] = new C[column];
     }
     this->matrixRow = row;
     this->matrixColumn = column;
@@ -100,14 +104,14 @@ Matrix<T>::Matrix(int row , int column , char value){
     }
 }
 
-template <class T>
-void Matrix<T>::resize(int row , int column){
-    T** tempArray = new T*[row];
+template <class C>
+void Matrix<C>::resize(int row , int column){
+    C** tempArray = new C*[row];
     for(int i = 0; i < row ; i++){
-        tempArray[i] = new T[column];
+        tempArray[i] = new C[column];
     }
     if(this->type == valueType){      //if integer matrix
-        T value = reach(1 , 1);
+        C value = reach(1 , 1);
         for(int i = 0 ; i < row ; i++){
             for(int j = 0 ; j < column ; j++){
                 tempArray[i][j] = value;
@@ -142,8 +146,8 @@ void Matrix<T>::resize(int row , int column){
 
 }
 
-template <class T>
-void Matrix<T>::print()const{
+template <class C>
+void Matrix<C>::print()const{
     for(int i = 0 ; i < this->matrixRow; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             cout << reach(i , j) << " ";
@@ -152,8 +156,8 @@ void Matrix<T>::print()const{
     }
 }
 
-template <class T>
-void Matrix<T>::print(string filename)const{
+template <class C>
+void Matrix<C>::print(string filename){
     fstream fname;
     fname.open(filename);
     for(int i = 0 ; i < this->matrixRow; i++){
@@ -165,41 +169,38 @@ void Matrix<T>::print(string filename)const{
     fname.close();
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator+(Matrix operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator+(Matrix& operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) 
-                                + operand.reach(i , j);
+                                + operand->reach(i , j);
         }
     }
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator-(Matrix operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator-(Matrix& operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) 
-                                - operand.reach(i , j);
+                                - operand->reach(i , j);
         }
     }
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator*(Matrix operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , operand.matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator*(Matrix& operand){
+    Matrix<C> temp(this->matrixRow , operand.matrixColumn , 0);
     int value = 0;
     for(int i = 0; i < this->matrixRow ; i++){
         for(int j = 0 ; j < operand.matrixColumn ; j++){    //offset
             for(int k = 0 ; k < this->matrixColumn ; k++){
-                value += this->reach(i , k) * operand.reach(k , j);
+                value += this->reach(i , k) * operand->reach(k , j);
             }
             temp.reach(i , j) = value;
             value = 0;
@@ -208,10 +209,9 @@ Matrix<T> Matrix<T>::operator*(Matrix operand){
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator+(int operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator+(int operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) + operand;
@@ -220,10 +220,9 @@ Matrix<T> Matrix<T>::operator+(int operand){
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator-(int operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator-(int operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) - operand;
@@ -232,10 +231,9 @@ Matrix<T> Matrix<T>::operator-(int operand){
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator*(int operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator*(int operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) * operand;
@@ -244,10 +242,9 @@ Matrix<T> Matrix<T>::operator*(int operand){
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator/(int operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator/(int operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) / operand;
@@ -256,10 +253,9 @@ Matrix<T> Matrix<T>::operator/(int operand){
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator%(int operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator%(int operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = this->reach(i , j) % operand;
@@ -268,14 +264,72 @@ Matrix<T> Matrix<T>::operator%(int operand){
     return temp;
 }
 
-template <class T>
-Matrix<T> Matrix<T>::operator^(int operand){
-    Matrix<T> temp;
-    temp.resize(this->matrixRow , this->matrixColumn);
+template <class C>
+Matrix<C> Matrix<C>::operator^(int operand){
+    Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             temp.reach(i , j) = pow(this->reach(i , j) , operand);
         }
     }
     return temp;
+}
+
+template <class C>
+Matrix<C> Matrix<C>::T(){
+    Matrix<C> temp(this->matrixColumn , this->matrixRow , 0);
+    for(int i = 0; i < this->matrixRow ; i++){
+        for(int j = 0; j < this->matrixColumn ; j++){
+            temp.reach(j , i) = this->reach(i , j);
+        }
+    }
+    return temp;
+}
+
+template <class C>
+Matrix<C> Matrix<C>::emul(Matrix& operand){
+    Matrix<C> temp(this->matrixColumn , this->matrixRow , 0);
+    for(int i = 0; i < this->matrixRow ; i++){
+        for(int j = 0; j < this->matrixColumn ; j++){
+            temp.reach(i , j) = this->reach(i , j) 
+                                * operand->reach(i , j);
+        }
+    }
+    return temp;
+}
+
+template <class C>
+double Matrix<C>::det(){
+    if(this->matrixRow == this->matrixColumn){
+        if(this->matrixRow == 2){
+            return ((this->reach(0 , 0) * this->reach(1 , 1)) -
+                    (this->reach(1 , 0) * this->reach(0 , 1));
+        }else{
+            double detValue = 0;
+            Matrix<C> temp(this->matrixRow - 1 , this->matrixColumn -1 
+                                                                   , 0);
+            for(int i = 0 ; i < this->matrixColumn ; i++){
+                //parent matrixin ilk satirinde gezinen for dongusu
+                for(int childRow = 0; childRow < temp.matrixRow ;
+                                                     childRow++){
+                    //child matrixde satiri gezinen for dongusu
+                    int offset = 0;
+                    for(int childCol = 0; childCol < this->matrixColumn;
+                                                            childCol++){
+                        if(childCol = i){
+                            offset = 1;
+                            continue;
+                        }
+                        temp.reach(childRow , childCol - offset) = 
+                                this->reach(childRow + 1 , childCol);
+                    }
+                    offset = 0;
+                }
+                detValue += reach(0 , i) * pow(-1 , i) * temp.det();
+            }
+            return detValue;
+        }
+    }else{
+        return 0;
+    }
 }
