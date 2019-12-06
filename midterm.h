@@ -1,7 +1,62 @@
 #include <iostream>
+#include <fstream>
 #include <ctime>
 #include <cmath>
 using namespace std;
+
+template <class C>
+double determinant(C** arr , int width){
+    if(width == 2){
+        return  (arr[0][0] * arr[1][1]) -
+                (arr[1][0] * arr[0][1]);
+    }else{
+        double detValue = 0;
+        C newArray[width - 1][width - 1];
+        for(int i = 0 ; i < width ; i++){
+            //parent matrixin ilk satirinde gezinen for dongusu
+            for(int childRow = 0 ; childRow < (width - 1) ; childRow++){
+                //child matrixde satiri gezinen for dongusu
+                int offset = 0;
+                for(int childCol = 0 ; childCol < width ; childCol++){
+                    if(childCol == i){
+                        offset = 1;
+                        continue;
+                    }
+                    newArray[childRow][childCol - offset] = 
+                            arr[childRow + 1][childCol];
+                }
+                offset = 0;
+            }
+            detValue += arr[0][i] * pow(-1 , i) * determinant(newArray
+                                                           , width - 1);
+        }
+        return detValue;
+    }
+
+}
+
+template <class C>
+C** cof(C** arr , int rowIndex , int colIndex , int arrWidth){
+    C newArray[arrWidth - 1][arrWidth - 1];
+    int rowOffset = 0;
+    int columnOffset = 0;
+    for(int childRow = 0 ; childRow < arrWidth ; childRow++){
+        if(childRow == rowIndex){
+            rowOffset = 1;
+            continue;
+        }
+        for(int childCol = 0 ; childCol < arrWidth ; childCol++){
+            if(childCol == colIndex){
+                columnOffset = 1;
+                continue;
+            }
+            newArray[childRow - rowOffset][childCol - columnOffset] = 
+            arr[childRow][childCol];
+        }
+        columnOffset = 0;
+    }
+    return newArray;
+}
 
 enum matrixType{
     valueType,
@@ -158,15 +213,15 @@ void Matrix<C>::print()const{
 
 template <class C>
 void Matrix<C>::print(string filename){
-    fstream fname;
-    fname.open(filename);
+    ofstream outputFile;
+    outputFile.open(filename);
     for(int i = 0 ; i < this->matrixRow; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            fname << reach(i , j) << " ";
+            outputFile << reach(i , j) << " ";
         }
-        fname << endl;
+        outputFile << endl;
     }
-    fname.close();
+    outputFile.close();
 }
 
 template <class C>
@@ -302,34 +357,92 @@ template <class C>
 double Matrix<C>::det(){
     if(this->matrixRow == this->matrixColumn){
         if(this->matrixRow == 2){
-            return ((this->reach(0 , 0) * this->reach(1 , 1)) -
+            return  (this->reach(0 , 0) * this->reach(1 , 1)) -
                     (this->reach(1 , 0) * this->reach(0 , 1));
         }else{
             double detValue = 0;
-            Matrix<C> temp(this->matrixRow - 1 , this->matrixColumn -1 
-                                                                   , 0);
+            C newArray[this->matrixRow - 1][this->matrixColumn - 1];
             for(int i = 0 ; i < this->matrixColumn ; i++){
                 //parent matrixin ilk satirinde gezinen for dongusu
-                for(int childRow = 0; childRow < temp.matrixRow ;
-                                                     childRow++){
+                for(int childRow = 0; childRow < (this->matrixRow - 1);
+                                                            childRow++){
                     //child matrixde satiri gezinen for dongusu
                     int offset = 0;
                     for(int childCol = 0; childCol < this->matrixColumn;
                                                             childCol++){
-                        if(childCol = i){
+                        if(childCol == i){
                             offset = 1;
                             continue;
                         }
-                        temp.reach(childRow , childCol - offset) = 
+                        newArray[childRow][childCol - offset] = 
                                 this->reach(childRow + 1 , childCol);
                     }
                     offset = 0;
                 }
-                detValue += reach(0 , i) * pow(-1 , i) * temp.det();
+                detValue += reach(0 , i) * pow(-1 , i) * 
+                         determinant(newArray , this->matrixColumn - 1);
             }
             return detValue;
         }
     }else{
         return 0;
     }
+}
+
+template <class C>
+Matrix<C> Matrix<C>::inv(){
+    Matrix<C> newArray(this->matrixRow , this->matrixColumn , 0);
+    for(int i = 0; i < this->matrixRow ; i++){
+        for(int j = 0 ; j < this->matrixColumn ; j++){
+            newArray.reach(i , j) = determinant(cof(this->ptr , i , j , 
+                               this->matrixColumn), this->matrixColumn);
+        }
+    }
+    return newArray * (1 / this->det());
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+struct rgb
+{
+    unsigned int red;
+    unsigned int green;
+    unsigned int blue;
+    rgb();
+    rgb(unsigned int , unsigned int , unsigned int);
+};
+
+rgb::rgb(){
+    this->red = 0;
+    this->green = 0;
+    this->blue = 0;
+}
+rgb::rgb(unsigned int r , unsigned int g , unsigned int b){
+    this->red = r;
+    this->green = g;
+    this->blue = b;
+}
+
+template <class C>
+class Image : public Matrix<C> {
+    private:
+        rgb rgb;
+    public:
+        Image();
+        Image(int , int);
+};
+
+template <class C>
+Image<C>::Image(){
+    Matrix<C>(255 , 255 , rgb());
+}
+
+template <class C>
+Image<C>::Image(int width , int height){
+    Matrix<C>(width , height , rgb());
 }
