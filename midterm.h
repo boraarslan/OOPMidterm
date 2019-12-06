@@ -439,10 +439,10 @@ class Image : public Matrix<C> {
 
 template <class C>
 Image<C>::Image(){
-    Matrix<C>(255 , 255 , rgb());
+    Matrix<C>(255 , 255 , rgb);
 }
 
 template <class C>
 Image<C>::Image(int width , int height){
-    Matrix<C>(width , height , rgb());
+    Matrix<C>(width , height , rgb);
 }
