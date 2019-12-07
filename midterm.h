@@ -2,7 +2,29 @@
 #include <fstream>
 #include <ctime>
 #include <cmath>
+#include <string>
 using namespace std;
+
+struct rgb
+{
+    unsigned int red;
+    unsigned int green;
+    unsigned int blue;
+    rgb();
+    rgb(unsigned int , unsigned int , unsigned int);
+};
+
+rgb::rgb(){
+    this->red = 0;
+    this->green = 0;
+    this->blue = 0;
+}
+rgb::rgb(unsigned int r , unsigned int g , unsigned int b){
+    this->red = r;
+    this->green = g;
+    this->blue = b;
+}
+
 
 template <class C>
 double determinant(C** arr , int width){
@@ -66,7 +88,7 @@ enum matrixType{
 
 template <class C>
 class Matrix{
-    private:
+    protected:
         C** ptr;
         int matrixRow;
         int matrixColumn;
@@ -158,6 +180,7 @@ Matrix<C>::Matrix(int row , int column , char value){
         this->type = randomType;
     }
 }
+
 
 template <class C>
 void Matrix<C>::resize(int row , int column){
@@ -408,41 +431,96 @@ Matrix<C> Matrix<C>::inv(){
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-struct rgb
-{
-    unsigned int red;
-    unsigned int green;
-    unsigned int blue;
-    rgb();
-    rgb(unsigned int , unsigned int , unsigned int);
-};
 
-rgb::rgb(){
-    this->red = 0;
-    this->green = 0;
-    this->blue = 0;
-}
-rgb::rgb(unsigned int r , unsigned int g , unsigned int b){
-    this->red = r;
-    this->green = g;
-    this->blue = b;
+
+unsigned int normalise(char value){
+    return (unsigned int)((unsigned char)value);
 }
 
 template <class C>
 class Image : public Matrix<C> {
     private:
-        rgb rgb;
+        int imageWidth;
+        int imageHeight;
     public:
         Image();
         Image(int , int);
+        Image(string , string);
+        void setRed(int , int , unsigned int);
+        void setGreen(int , int , unsigned int);
+        void setBlue(int , int , unsigned int);
+        void setRGB(int , int ,
+                    unsigned int , unsigned int , unsigned int);
 };
 
 template <class C>
-Image<C>::Image(){
-    Matrix<C>(255 , 255 , rgb);
+void Image<C>::setRed(int indexRow , 
+                      int indexColumn ,
+                      unsigned int Value){
+
+    this->ptr[indexRow][indexColumn].red = Value;
 }
 
 template <class C>
-Image<C>::Image(int width , int height){
-    Matrix<C>(width , height , rgb);
+void Image<C>::setGreen(int indexRow , 
+                      int indexColumn ,
+                      unsigned int Value){
+
+    this->ptr[indexRow][indexColumn].green = Value;
+}
+
+template <class C>
+void Image<C>::setBlue(int indexRow , 
+                      int indexColumn ,
+                      unsigned int Value){
+
+    this->ptr[indexRow][indexColumn].blue = Value;
+}
+
+template <class C>
+void Image<C>::setRGB(int indexRow ,
+                      int indexColumn ,
+                      unsigned int redValue , 
+                      unsigned int greenValue , 
+                      unsigned int blueValue){
+                          
+    setRed(indexRow , indexColumn , redValue);
+    setGreen(indexRow , indexColumn , greenValue);
+    setBlue(indexRow , indexColumn , blueValue);
+
+}
+
+
+template <class C>
+Image<C>::Image(): Matrix<C>(255 , 255 , rgb()){
+    
+}
+
+template <class C>
+Image<C>::Image(int width , int height): 
+                Matrix<C>(width , height , rgb()){
+    
+}
+
+template <class C>
+Image<C>::Image(string filename , string format): 
+                Matrix<C>(10 , 10 , rgb()){
+    if(format.compare("bmp") == 0){
+
+    }
+    if(format.compare("bin") == 0){
+        char byteValue;
+        ifstream binFile(filename , ios::in | ios::binary);
+        binFile.read(&byteValue , 1);
+        this->imageHeight = normalise(byteValue);
+        binFile.read(&byteValue , 1);
+        this->imageWidth = normalise(byteValue);
+        resize(this->imageHeight , this->matrixColumn);
+        for(int i = 0; i < this->imageHeight ; i++){
+            for(int j = 0; j < this->imageWidth ; j++){
+                binFile.read(&byteValue , 1);
+                setRGB(i , j , 0 , normalise(byteValue) , 0);
+            }
+        }
+    }
 }
