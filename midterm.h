@@ -437,11 +437,22 @@ unsigned int normalise(char value){
     return (unsigned int)((unsigned char)value);
 }
 
+enum imageType{
+    bmp ,
+    bin ,
+    zero
+};
+
 template <class C>
 class Image : public Matrix<C> {
     private:
-        int imageWidth;
-        int imageHeight;
+        bool** binaryImage;
+        unsigned int imageWidth;
+        unsigned int imageHeight;
+        char bmpHeader[54];
+        char* imageTable;
+        unsigned int pixelValueOffset;
+        imageType imageInfo;
     public:
         Image();
         Image(int , int);
@@ -451,6 +462,14 @@ class Image : public Matrix<C> {
         void setBlue(int , int , unsigned int);
         void setRGB(int , int ,
                     unsigned int , unsigned int , unsigned int);
+        void imread(string , string);
+        void imwrite(string , string);
+        void color2gray();
+        void gray2binary(int);
+        void erosion();
+        void dilation();
+        void opening();
+        void closing();
 };
 
 template <class C>
@@ -506,21 +525,307 @@ template <class C>
 Image<C>::Image(string filename , string format): 
                 Matrix<C>(10 , 10 , rgb()){
     if(format.compare("bmp") == 0){
+        ifstream bmpFile(filename , ios::in | ios::binary);
+        char byteValue;
 
+        bmpFile.read(this->bmpHeader , 54);
+        this->pixelValueOffset = this->bmpHeader[10] |
+                                 this->bmpHeader[11] << 8 |
+                                 this->bmpHeader[12] << 16 |
+                                 this->bmpHeader[13] << 24;
+        this->imageWidth =       this->bmpHeader[18] |
+                                 this->bmpHeader[19] << 8 |
+                                 this->bmpHeader[20] << 16 |
+                                 this->bmpHeader[21] << 24;
+        this->imageHeight =      this->bmpHeader[22] |
+                                 this->bmpHeader[23] << 8 |
+                                 this->bmpHeader[24] << 16 |
+                                 this->bmpHeader[25] << 24;
+        char localTable[(this->pixelValueOffset) - 54];
+        bmpFile.read(localTable , (this->pixelValueOffset) - 54);
+        this->imageTable = localTable;
+
+        Matrix<C>::resize(this->imageHeight , this->imageWidth);
+
+        bmpFile.seekg(this->pixelValueOffset);
+
+        for(int i = 1; i <= this->imageHeight ; i++){
+            for(int j = 0; j < this->imageWidth ; j++){
+                bmpFile.read(&byteValue , 1);
+                setRGB(this->imageHeight - i , j ,
+                       0 , normalise(byteValue) , 0);
+            }
+        }
+        bmpFile.close();
+        this->imageInfo = bmp;
     }
     if(format.compare("bin") == 0){
         char byteValue;
         ifstream binFile(filename , ios::in | ios::binary);
+
         binFile.read(&byteValue , 1);
         this->imageHeight = normalise(byteValue);
         binFile.read(&byteValue , 1);
         this->imageWidth = normalise(byteValue);
-        resize(this->imageHeight , this->matrixColumn);
+
+        Matrix<C>::resize(this->imageHeight , this->imageWidth);
+
         for(int i = 0; i < this->imageHeight ; i++){
             for(int j = 0; j < this->imageWidth ; j++){
                 binFile.read(&byteValue , 1);
                 setRGB(i , j , 0 , normalise(byteValue) , 0);
             }
         }
+        binFile.close();
+        this->imageInfo = bin;
     }
+}
+
+template <class C>
+void Image<C>::imread(string filename , string format){
+
+    if(format.compare("bmp") == 0){
+        ifstream bmpFile(filename , ios::in | ios::binary);
+        char byteValue;
+
+        bmpFile.read(this->bmpHeader , 54);
+        this->pixelValueOffset = this->bmpHeader[10] |
+                                 this->bmpHeader[11] << 8 |
+                                 this->bmpHeader[12] << 16 |
+                                 this->bmpHeader[13] << 24;
+        this->imageWidth =       this->bmpHeader[18] |
+                                 this->bmpHeader[19] << 8 |
+                                 this->bmpHeader[20] << 16 |
+                                 this->bmpHeader[21] << 24;
+        this->imageHeight =      this->bmpHeader[22] |
+                                 this->bmpHeader[23] << 8 |
+                                 this->bmpHeader[24] << 16 |
+                                 this->bmpHeader[25] << 24;
+        char localTable[(this->pixelValueOffset) - 54];
+        bmpFile.read(localTable , (this->pixelValueOffset) - 54);
+        this->imageTable = localTable;
+
+        Matrix<C>::resize(this->imageHeight , this->imageWidth);
+
+        bmpFile.seekg(this->pixelValueOffset);
+
+        for(int i = 1; i <= this->imageHeight ; i++){
+            for(int j = 0; j < this->imageWidth ; j++){
+                bmpFile.read(&byteValue , 1);
+                setRGB(this->imageHeight - i , j ,
+                       0 , normalise(byteValue) , 0);
+            }
+        }
+        bmpFile.close();
+        this->imageInfo = bmp;
+    }
+    if(format.compare("bin") == 0){
+        char byteValue;
+        ifstream binFile(filename , ios::in | ios::binary);
+
+        binFile.read(&byteValue , 1);
+        this->imageHeight = normalise(byteValue);
+        binFile.read(&byteValue , 1);
+        this->imageWidth = normalise(byteValue);
+        Matrix<C>::resize(this->imageHeight , this->imageWidth);
+
+        for(int i = 0; i < this->imageHeight ; i++){
+            for(int j = 0; j < this->imageWidth ; j++){
+                binFile.read(&byteValue , 1);
+                setRGB(i , j , 0 , normalise(byteValue) , 0);
+            }
+        }
+        binFile.close();
+        this->imageInfo = bin;
+    }
+}
+
+template <class C>
+void Image<C>::imwrite(string filename , string format){
+    if(format.compare("bmp") == 0){
+        ofstream bmpFile(filename , ios::out | ios::binary);
+        char byteValue;
+        bmpFile.write(this->bmpHeader , 54);
+        bmpFile.write(this->imageTable , (this->pixelValueOffset) - 54);
+        for(int i = 1; i <= this->imageHeight ; i++){
+            for(int j = 0; j < this->imageWidth ; j++){
+                byteValue = 
+                      Matrix<C>::reach(this->imageHeight - i , j).green;
+                bmpFile.write(&byteValue , 1);
+            }
+        }
+        bmpFile.close();
+    }
+    if(format.compare("bin") == 0){
+        char byteValue;
+        ofstream binFile(filename , ios::out | ios::binary);
+
+        byteValue = this->imageHeight;
+        binFile.write(&byteValue , 1);
+        byteValue = this->imageWidth;
+        binFile.write(&byteValue , 1);
+
+        for(int i = 0; i < this->imageHeight ; i++){
+            for(int j = 0; j < this->imageWidth ; j++){
+                byteValue = Matrix<C>::reach(i , j).green;
+                binFile.write(&byteValue , 1);
+            }
+        }
+        binFile.close();
+    }
+}
+
+template <class C>
+void Image<C>::color2gray(){
+    for(int i = 0; i < this->imageHeight ; i++){
+        for(int j = 0 ; j < this->imageWidth ; j++){
+            setRed(i , j , 0);
+            setBlue(i , j , 0);
+        }
+    }
+}
+
+template <class C>
+void Image<C>::gray2binary(int thr){
+    bool **temp = new bool*[this->imageHeight];
+    for(int i = 0; i < this->imageHeight; i++){
+        temp[i] = new bool[this->imageWidth];
+    }
+    for(int i = 0; i < this->imageHeight ; i++){
+        for(int j = 0; j < this->imageWidth ; j++){
+            if(Matrix<C>::reach(i , j).green < thr){
+                temp[i][j] = 0;
+            } else {
+                temp[i][j] = 1;
+            }
+        }
+    }
+    this->binaryImage = temp;
+    this->imageInfo = zero;
+}
+
+template <class C>
+void Image<C>::erosion(){
+    if(this->imageInfo == zero){
+        bool** temp = new bool*[this->imageHeight + 2];
+        for(int i = 0; i < (this->imageHeight + 2) ; i++){
+            temp[i] = new bool[this->imageWidth + 2];
+        }
+
+        for(int i = 0; i < (this->imageWidth + 2); i++){
+            temp[0][i] = 1;
+            temp[this->imageHeight + 1][i] = 1;
+        }
+        for(int i = 0; i < (this->imageHeight + 2); i++){
+            temp[i][0] = 1;
+            temp[i][this->imageWidth + 1] = 1;
+        }
+
+        for(int i = 0; i < this->imageHeight ; i++){
+            for(int j = 0 ; j < this->imageWidth ; j++){
+                temp[i + 1][j + 1] = this->binaryImage[i][j];
+            }
+        }
+
+        bool** finalImage = new bool*[this->imageHeight];
+        for(int i = 0; i < (this->imageHeight) ; i++){
+            finalImage[i] = new bool[this->imageWidth];
+        }
+
+        for(int i = 1; i <= this->imageHeight ; i++){
+            for(int j = 1; j <= this->imageWidth ; j++){
+                if(temp[i][j] == 0         ||
+                   temp[i - 1][j - 1] == 0 ||
+                   temp[i - 1][j]     == 0 ||
+                   temp[i - 1][j + 1] == 0 ||
+                   temp[i][j - 1]     == 0 ||
+                   temp[i][j + 1]     == 0 ||
+                   temp[i + 1][j - 1] == 0 ||
+                   temp[i + 1][j]     == 0 ||
+                   temp[i + 1][j + 1] == 0){
+
+                       finalImage[i - 1][j - 1] = 0;
+
+                   }else{
+                       finalImage[i - 1][j - 1] = 1;
+                   }
+            }
+        }
+
+        delete this->binaryImage;
+        delete temp;
+        this->binaryImage = finalImage;
+
+    }else{
+        return;
+    }
+}
+
+template <class C>
+void Image<C>::dilation(){
+    if(this->imageInfo == zero){
+        bool** temp = new bool*[this->imageHeight + 2];
+        for(int i = 0; i < (this->imageHeight + 2) ; i++){
+            temp[i] = new bool[this->imageWidth + 2];
+        }
+
+        for(int i = 0; i < (this->imageWidth + 2); i++){
+            temp[0][i] = 0;
+            temp[this->imageHeight + 1][i] = 0;
+        }
+        for(int i = 0; i < (this->imageHeight + 2); i++){
+            temp[i][0] = 0;
+            temp[i][this->imageWidth + 1] = 0;
+        }
+
+        for(int i = 0; i < this->imageHeight ; i++){
+            for(int j = 0 ; j < this->imageWidth ; j++){
+                temp[i + 1][j + 1] = this->binaryImage[i][j];
+            }
+        }
+
+        bool** finalImage = new bool*[this->imageHeight];
+        for(int i = 0; i < (this->imageHeight) ; i++){
+            finalImage[i] = new bool[this->imageWidth];
+        }
+
+        for(int i = 1; i <= this->imageHeight ; i++){
+            for(int j = 1; j <= this->imageWidth ; j++){
+                if(temp[i][j] == 1         ||
+                   temp[i - 1][j - 1] == 1 ||
+                   temp[i - 1][j]     == 1 ||
+                   temp[i - 1][j + 1] == 1 ||
+                   temp[i][j - 1]     == 1 ||
+                   temp[i][j + 1]     == 1 ||
+                   temp[i + 1][j - 1] == 1 ||
+                   temp[i + 1][j]     == 1 ||
+                   temp[i + 1][j + 1] == 1){
+
+                       finalImage[i - 1][j - 1] = 1;
+
+                   }else{
+                       finalImage[i - 1][j - 1] = 0;
+                   }
+            }
+        }
+
+        delete this->binaryImage;
+        delete temp;
+        this->binaryImage = finalImage;
+
+    }else{
+        return;
+    }
+}
+
+template <class C>
+void Image<C>::opening(){
+    erosion();
+    dilation();
+}
+
+template <class C>
+void Image<C>::closing(){
+    dilation();
+    erosion();
 }
