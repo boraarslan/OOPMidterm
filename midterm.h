@@ -3,6 +3,7 @@
 #include <ctime>
 #include <cmath>
 #include <string>
+#include <iomanip>
 using namespace std;
 
 struct rgb
@@ -12,6 +13,7 @@ struct rgb
     unsigned int blue;
     rgb();
     rgb(unsigned int , unsigned int , unsigned int);
+    rgb operator=(int);
 };
 
 rgb::rgb(){
@@ -25,6 +27,13 @@ rgb::rgb(unsigned int r , unsigned int g , unsigned int b){
     this->blue = b;
 }
 
+rgb rgb::operator=(int value){
+    rgb temp;
+    temp.red = value;
+    temp.green = value;
+    temp.blue = value;
+    return temp;
+}
 
 template <class C>
 double determinant(C** arr , int width){
@@ -98,20 +107,21 @@ class Matrix{
         Matrix(int , int , C);
         Matrix(int , int , char);
         C reach(int , int);
+        void setval(int , int , C);
         void resize(int , int);
-        void print() const;
+        void print();
         void print(string);
-        Matrix operator+ (Matrix&);
+        Matrix operator+ (Matrix);
         Matrix operator+ (int);
-        Matrix operator- (Matrix&);
+        Matrix operator- (Matrix);
         Matrix operator- (int);
-        Matrix operator* (Matrix&);
+        Matrix operator* (Matrix);
         Matrix operator* (int);
         Matrix operator/ (int);
         Matrix operator% (int);
         Matrix operator^ (int);
         Matrix T();
-        Matrix emul(Matrix&);
+        Matrix emul(Matrix);
         Matrix inv();
         double det();
 };
@@ -121,6 +131,10 @@ C Matrix<C>::reach(int row , int column){
     return (this->ptr)[row][column];
 }
 
+template <class C>
+void Matrix<C>::setval(int row , int column , C value){
+    this->ptr[row][column] = value;
+}
 
 template <class C>
 Matrix<C>::Matrix(){
@@ -132,7 +146,7 @@ Matrix<C>::Matrix(){
     this->type = valueType;
     for(int i = 0 ; i < 10 ; i++){
         for(int j = 0 ; j < 10 ; j++){
-            reach(i , j) = 0;
+            setval(i , j , 0);
         }
     }
 }
@@ -148,7 +162,7 @@ Matrix<C>::Matrix(int row , int column , C value){
     this->type = valueType;
     for(int i = 0 ; i < row ; i++){
         for(int j = 0 ; j < column ; j++){
-            reach(i , j) = value;
+            setval(i , j , value);
         }
     }
 }
@@ -164,8 +178,8 @@ Matrix<C>::Matrix(int row , int column , char value){
     if(value == 'e'){                   //identification matrix
         for(int i = 0 ; i < row ; i++){
             for(int j = 0 ; j < column ; j++){
-                if(i == j) reach(i , j) = 1;
-                else reach(i , j) = 0;
+                if(i == j) setval(i , j , 1);
+                else setval(i , j , 0);
             }
         }
         this->type = idType;
@@ -174,7 +188,7 @@ Matrix<C>::Matrix(int row , int column , char value){
         srand(time(NULL));
         for(int i = 0 ; i < row ; i++){
             for(int j = 0 ; j < column ; j++){
-                reach(i , j) = rand() % 256;
+                setval(i , j ,(rand() % 256));
             }
         }
         this->type = randomType;
@@ -189,7 +203,7 @@ void Matrix<C>::resize(int row , int column){
         tempArray[i] = new C[column];
     }
     if(this->type == valueType){      //if integer matrix
-        C value = reach(1 , 1);
+        C value = this->reach(0 , 0);
         for(int i = 0 ; i < row ; i++){
             for(int j = 0 ; j < column ; j++){
                 tempArray[i][j] = value;
@@ -225,7 +239,7 @@ void Matrix<C>::resize(int row , int column){
 }
 
 template <class C>
-void Matrix<C>::print()const{
+void Matrix<C>::print(){
     for(int i = 0 ; i < this->matrixRow; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
             cout << reach(i , j) << " ";
@@ -248,39 +262,39 @@ void Matrix<C>::print(string filename){
 }
 
 template <class C>
-Matrix<C> Matrix<C>::operator+(Matrix& operand){
+Matrix<C> Matrix<C>::operator+(Matrix operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) 
-                                + operand->reach(i , j);
+            temp.setval(i , j , 
+                        (this->reach(i , j) + operand.reach(i , j)));
         }
     }
     return temp;
 }
 
 template <class C>
-Matrix<C> Matrix<C>::operator-(Matrix& operand){
+Matrix<C> Matrix<C>::operator-(Matrix operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) 
-                                - operand->reach(i , j);
+            temp.setval(i , j , 
+                        (this->reach(i , j) - operand.reach(i , j)));
         }
     }
     return temp;
 }
 
 template <class C>
-Matrix<C> Matrix<C>::operator*(Matrix& operand){
+Matrix<C> Matrix<C>::operator*(Matrix operand){
     Matrix<C> temp(this->matrixRow , operand.matrixColumn , 0);
     int value = 0;
     for(int i = 0; i < this->matrixRow ; i++){
         for(int j = 0 ; j < operand.matrixColumn ; j++){    //offset
             for(int k = 0 ; k < this->matrixColumn ; k++){
-                value += this->reach(i , k) * operand->reach(k , j);
+                value += this->reach(i , k) * operand.reach(k , j);
             }
-            temp.reach(i , j) = value;
+            temp.setval(i , j , value);
             value = 0;
         }
     }
@@ -292,7 +306,7 @@ Matrix<C> Matrix<C>::operator+(int operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) + operand;
+            temp.setval(i , j , (this->reach(i , j) + operand));
         }
     }
     return temp;
@@ -303,7 +317,7 @@ Matrix<C> Matrix<C>::operator-(int operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) - operand;
+            temp.setval(i , j , (this->reach(i , j) - operand));
         }
     }
     return temp;
@@ -314,7 +328,7 @@ Matrix<C> Matrix<C>::operator*(int operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) * operand;
+            temp.setval(i , j , (this->reach(i , j) * operand));
         }
     }
     return temp;
@@ -325,7 +339,7 @@ Matrix<C> Matrix<C>::operator/(int operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) / operand;
+            temp.setval(i , j , (this->reach(i , j) / operand));
         }
     }
     return temp;
@@ -336,7 +350,7 @@ Matrix<C> Matrix<C>::operator%(int operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) % operand;
+            temp.setval(i , j , (this->reach(i , j) % operand));
         }
     }
     return temp;
@@ -347,7 +361,7 @@ Matrix<C> Matrix<C>::operator^(int operand){
     Matrix<C> temp(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0 ; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = pow(this->reach(i , j) , operand);
+            temp.setval(i , j , (pow(this->reach(i , j) , operand)));
         }
     }
     return temp;
@@ -358,19 +372,19 @@ Matrix<C> Matrix<C>::T(){
     Matrix<C> temp(this->matrixColumn , this->matrixRow , 0);
     for(int i = 0; i < this->matrixRow ; i++){
         for(int j = 0; j < this->matrixColumn ; j++){
-            temp.reach(j , i) = this->reach(i , j);
+            temp.setval(j , i , this->reach(i , j));
         }
     }
     return temp;
 }
 
 template <class C>
-Matrix<C> Matrix<C>::emul(Matrix& operand){
+Matrix<C> Matrix<C>::emul(Matrix operand){
     Matrix<C> temp(this->matrixColumn , this->matrixRow , 0);
     for(int i = 0; i < this->matrixRow ; i++){
         for(int j = 0; j < this->matrixColumn ; j++){
-            temp.reach(i , j) = this->reach(i , j) 
-                                * operand->reach(i , j);
+            temp.setval(i , j , (this->reach(i , j) 
+                                * operand.reach(i , j)));
         }
     }
     return temp;
@@ -417,8 +431,9 @@ Matrix<C> Matrix<C>::inv(){
     Matrix<C> newArray(this->matrixRow , this->matrixColumn , 0);
     for(int i = 0; i < this->matrixRow ; i++){
         for(int j = 0 ; j < this->matrixColumn ; j++){
-            newArray.reach(i , j) = determinant(cof(this->ptr , i , j , 
-                               this->matrixColumn), this->matrixColumn);
+            newArray.setval(i , j , 
+            (determinant(cof(this->ptr , i , j , this->matrixColumn), 
+            this->matrixColumn)));
         }
     }
     return newArray * (1 / this->det());
@@ -450,9 +465,10 @@ class Image : public Matrix<C> {
         unsigned int imageWidth;
         unsigned int imageHeight;
         char bmpHeader[54];
-        char* imageTable;
+        char* colorTable;
         unsigned int pixelValueOffset;
         imageType imageInfo;
+        unsigned int bitPerPixel;
     public:
         Image();
         Image(int , int);
@@ -527,27 +543,32 @@ Image<C>::Image(string filename , string format):
     if(format.compare("bmp") == 0){
         ifstream bmpFile(filename , ios::in | ios::binary);
         char byteValue;
-
         bmpFile.read(this->bmpHeader , 54);
-        this->pixelValueOffset = this->bmpHeader[10] |
+        this->pixelValueOffset = normalise
+                                (this->bmpHeader[10] |
                                  this->bmpHeader[11] << 8 |
                                  this->bmpHeader[12] << 16 |
-                                 this->bmpHeader[13] << 24;
-        this->imageWidth =       this->bmpHeader[18] |
+                                 this->bmpHeader[13] << 24);
+        this->imageWidth =       normalise
+                                (this->bmpHeader[18] |
                                  this->bmpHeader[19] << 8 |
                                  this->bmpHeader[20] << 16 |
-                                 this->bmpHeader[21] << 24;
-        this->imageHeight =      this->bmpHeader[22] |
+                                 this->bmpHeader[21] << 24);
+        this->imageHeight =      normalise
+                                (this->bmpHeader[22] |
                                  this->bmpHeader[23] << 8 |
                                  this->bmpHeader[24] << 16 |
-                                 this->bmpHeader[25] << 24;
-        char localTable[(this->pixelValueOffset) - 54];
-        bmpFile.read(localTable , (this->pixelValueOffset) - 54);
-        this->imageTable = localTable;
+                                 this->bmpHeader[25] << 24);
+
+        this->bitPerPixel = (4 * pow(2,normalise(this->bmpHeader[28])));
+        this->colorTable = new char[this->bitPerPixel];
+        bmpFile.read(this->colorTable, this->bitPerPixel);
+
 
         Matrix<C>::resize(this->imageHeight , this->imageWidth);
 
-        bmpFile.seekg(this->pixelValueOffset);
+        cout << this->imageHeight << endl;
+        cout << this->imageWidth << endl;
 
         for(int i = 1; i <= this->imageHeight ; i++){
             for(int j = 0; j < this->imageWidth ; j++){
@@ -589,25 +610,28 @@ void Image<C>::imread(string filename , string format){
         char byteValue;
 
         bmpFile.read(this->bmpHeader , 54);
-        this->pixelValueOffset = this->bmpHeader[10] |
+        this->pixelValueOffset = normalise
+                                (this->bmpHeader[10] |
                                  this->bmpHeader[11] << 8 |
                                  this->bmpHeader[12] << 16 |
-                                 this->bmpHeader[13] << 24;
-        this->imageWidth =       this->bmpHeader[18] |
+                                 this->bmpHeader[13] << 24);
+        this->imageWidth =       normalise
+                                (this->bmpHeader[18] |
                                  this->bmpHeader[19] << 8 |
                                  this->bmpHeader[20] << 16 |
-                                 this->bmpHeader[21] << 24;
-        this->imageHeight =      this->bmpHeader[22] |
+                                 this->bmpHeader[21] << 24);
+        this->imageHeight =      normalise
+                                (this->bmpHeader[22] |
                                  this->bmpHeader[23] << 8 |
                                  this->bmpHeader[24] << 16 |
-                                 this->bmpHeader[25] << 24;
-        char localTable[(this->pixelValueOffset) - 54];
-        bmpFile.read(localTable , (this->pixelValueOffset) - 54);
-        this->imageTable = localTable;
+                                 this->bmpHeader[25] << 24);
 
-        Matrix<C>::resize(this->imageHeight , this->imageWidth);
+        this->bitPerPixel = (4 * pow(2,normalise(this->bmpHeader[28])));
+        this->colorTable = new char[this->bitPerPixel];
+        bmpFile.read(this->colorTable, this->bitPerPixel);
 
-        bmpFile.seekg(this->pixelValueOffset);
+        Matrix<rgb>::resize(this->imageHeight , this->imageWidth);
+
 
         for(int i = 1; i <= this->imageHeight ; i++){
             for(int j = 0; j < this->imageWidth ; j++){
@@ -646,11 +670,24 @@ void Image<C>::imwrite(string filename , string format){
         ofstream bmpFile(filename , ios::out | ios::binary);
         char byteValue;
         bmpFile.write(this->bmpHeader , 54);
-        bmpFile.write(this->imageTable , (this->pixelValueOffset) - 54);
-        for(int i = 1; i <= this->imageHeight ; i++){
+        bmpFile.write(this->colorTable , this->bitPerPixel);
+        if(this->imageInfo == zero){
+            for(int i = 1; i <= this->imageHeight ; i++){
+                for(int j = 0; j < this->imageWidth ; j++){
+                if(this->binaryImage[this->imageHeight - i][j] == 1){
+                    byteValue = 255;
+                } else {
+                    byteValue = 0;
+                }
+                bmpFile.write(&byteValue , 1);
+                }
+            }
+            bmpFile.close();
+            return;
+        }
+        for(int i = this->imageHeight - 1; i >= 0 ; i--){
             for(int j = 0; j < this->imageWidth ; j++){
-                byteValue = 
-                      Matrix<C>::reach(this->imageHeight - i , j).green;
+                byteValue = Matrix<C>::reach(i , j).green;
                 bmpFile.write(&byteValue , 1);
             }
         }
@@ -664,6 +701,22 @@ void Image<C>::imwrite(string filename , string format){
         binFile.write(&byteValue , 1);
         byteValue = this->imageWidth;
         binFile.write(&byteValue , 1);
+
+        if(imageInfo == zero){
+            for(int i = 0; i < this->imageHeight ; i++){
+                for(int j = 0; j < this->imageWidth ; j++){
+                    if(this->binaryImage[this->imageHeight - i][j] == 1)
+                    {
+                        byteValue = 255;
+                    } else {
+                        byteValue = 0;
+                    }
+                    binFile.write(&byteValue , 1);
+                }
+            }
+            binFile.close();
+            return;
+        }
 
         for(int i = 0; i < this->imageHeight ; i++){
             for(int j = 0; j < this->imageWidth ; j++){
@@ -751,9 +804,12 @@ void Image<C>::erosion(){
                    }
             }
         }
-
-        delete this->binaryImage;
-        delete temp;
+        for(int i = 0 ; i < this->imageHeight ; i++){
+            delete[] this->binaryImage[i];
+            delete[] temp[i];
+        }
+        delete[] this->binaryImage;
+        delete[] temp;
         this->binaryImage = finalImage;
 
     }else{
@@ -808,9 +864,12 @@ void Image<C>::dilation(){
                    }
             }
         }
-
-        delete this->binaryImage;
-        delete temp;
+        for(int i = 0 ; i < this->imageHeight ; i++){
+            delete[] this->binaryImage[i];
+            delete[] temp[i];
+        }
+        delete[] this->binaryImage;
+        delete[] temp;
         this->binaryImage = finalImage;
 
     }else{
@@ -828,4 +887,124 @@ template <class C>
 void Image<C>::closing(){
     dilation();
     erosion();
+}
+
+template <class C>
+class Table : public Matrix<C>{
+    private:
+        int* rowNames;
+        string* columnNames;
+        unsigned int TableRow;
+        unsigned int TableColumn;
+    public:
+        Table();
+        Table(int , int , int);
+        Table(int , int , char);
+        C itemAt(int , int);
+        C itemAt(string);
+        C itemAt(string , string);
+        void setRowNames(string [] , int);
+        void setColNames(string [] , int);
+        void print();
+};
+
+template <class C>
+Table<C>::Table(){
+    this->rowNames = new int[10];
+    this->columnNames = new string[10];
+    for(int i = 0 ; i < 10 ; i++){
+        this->rowNames[i] = i;
+        this->columnNames[i] = (string)((char)(65 + i));
+    }
+    this->TableRow = this->TableColumn = 10;
+}
+
+template <class C>
+Table<C>::Table(int row , int column , int value): 
+          Matrix<C>(row , column , value){
+    this->rowNames = new int[row];
+    this->columnNames = new string[column];
+    for(int i = 0 ; i < 10 ; i++){
+        this->rowNames[i] = i;
+        this->columnNames[i] = (string)((char)(65 + i));
+    }
+    this->TableRow = row;
+    this->TableColumn = column;
+}
+
+template <class C>
+Table<C>::Table(int row , int column , char value) : 
+          Matrix<C>(row , column , value){
+    this->rowNames = new int[10];
+    this->columnNames = new string[10];
+    for(int i = 0 ; i < 10 ; i++){
+        this->rowNames[i] = i;
+        this->columnNames[i] = (string)((char)(65 + i));
+    }
+    this->TableRow = row;
+    this->TableColumn = column;
+}
+
+template <class C>
+C Table<C>::itemAt(int row , int column){
+    return Matrix<C>::reach(row , column);
+}
+
+template <class C>
+C Table<C>::itemAt(string value){
+    for(int i = 0; i < this->TableColumn ; i++){
+        for(int j = 0 ; j < this->TableRow ; j++){
+            if(value.compare((this->columnNames[i] + 
+                             (string)(this->rowNames[j]))) == 0){
+                return Matrix<C>::reach(j , i);
+            }
+        }
+    }
+}
+
+template <class C>
+C Table<C>::itemAt(string row , string column){
+    for(int i = 0; i < this->TableRow ; i++){
+        if(row.compare((string)(this->rowNames[i])) == 0){
+            for(int j = 0; j < this->TableColumn ; j++){
+                if(column.compare(this->columnNames[j]) == 0){
+                    return Matrix<C>::reach(j , i);
+                }
+            }
+        }
+    }
+}
+
+template <class C>
+void Table<C>::setRowNames(string rnames[] , int arrayLength){
+    delete this->rowNames;
+    this->rowNames = rnames;
+    this->TableRow = arrayLength;
+}
+
+template <class C>
+void Table<C>::setColNames(string cnames[] , int arrayLength){
+    delete this->columnNames;
+    this->columnNames = cnames;
+    this->TableColumn = arrayLength;
+}
+
+template <class C>
+void Table<C>::print(){
+    cout << "        ";
+    cout << setw(5);
+    for(int i = 0; i < this->TableColumn ; i++){
+        cout << this->columnNames[i].substr(0 , 4);
+    }
+    cout << endl;
+    for(int i = 0; i < this->TableRow ; i++){
+        cout << setw(8);
+        string elem = (string)(this->rowNames);
+        cout << elem.substr(0 , 8);
+        cout << setw(5);
+        for(int j = 0; j < this->TableColumn ; j++){
+            cout << Matrix<C>::reach(i , j);
+        }
+    }
+    cout << setw(0);
 }
