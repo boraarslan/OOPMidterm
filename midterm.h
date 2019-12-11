@@ -892,7 +892,7 @@ void Image<C>::closing(){
 template <class C>
 class Table : public Matrix<C>{
     private:
-        int* rowNames;
+        string* rowNames;
         string* columnNames;
         unsigned int TableRow;
         unsigned int TableColumn;
@@ -910,11 +910,15 @@ class Table : public Matrix<C>{
 
 template <class C>
 Table<C>::Table(){
-    this->rowNames = new int[10];
+    this->rowNames = new string[10];
     this->columnNames = new string[10];
+    char tempChar = 65;
+    string tempStr;
     for(int i = 0 ; i < 10 ; i++){
-        this->rowNames[i] = i;
-        this->columnNames[i] = (string)((char)(65 + i));
+        tempStr = tempChar;
+        this->rowNames[i] = to_string(i);
+        this->columnNames[i] = tempStr;
+        tempChar++;
     }
     this->TableRow = this->TableColumn = 10;
 }
@@ -922,11 +926,17 @@ Table<C>::Table(){
 template <class C>
 Table<C>::Table(int row , int column , int value): 
           Matrix<C>(row , column , value){
-    this->rowNames = new int[row];
+    this->rowNames = new string[row];
     this->columnNames = new string[column];
-    for(int i = 0 ; i < 10 ; i++){
-        this->rowNames[i] = i;
-        this->columnNames[i] = (string)((char)(65 + i));
+    char tempChar = 65;
+    string tempStr;
+    for(int i = 0 ; i < column ; i++){
+        tempStr = tempChar;
+        this->columnNames[i] = tempStr;
+        tempChar++;
+    }
+    for(int i = 0; i < row ; i++){
+        this->rowNames[i] = to_string(i);
     }
     this->TableRow = row;
     this->TableColumn = column;
@@ -935,11 +945,17 @@ Table<C>::Table(int row , int column , int value):
 template <class C>
 Table<C>::Table(int row , int column , char value) : 
           Matrix<C>(row , column , value){
-    this->rowNames = new int[10];
-    this->columnNames = new string[10];
-    for(int i = 0 ; i < 10 ; i++){
-        this->rowNames[i] = i;
-        this->columnNames[i] = (string)((char)(65 + i));
+    this->rowNames = new string[row];
+    this->columnNames = new string[column];
+    char tempChar = 65;
+    string tempStr;
+    for(int i = 0 ; i < column ; i++){
+        tempStr = tempChar;
+        this->columnNames[i] = tempStr;
+        tempChar++;
+    }
+    for(int i = 0; i < row ; i++){
+        this->rowNames[i] = to_string(i);
     }
     this->TableRow = row;
     this->TableColumn = column;
@@ -952,10 +968,12 @@ C Table<C>::itemAt(int row , int column){
 
 template <class C>
 C Table<C>::itemAt(string value){
+    string tempname;
     for(int i = 0; i < this->TableColumn ; i++){
         for(int j = 0 ; j < this->TableRow ; j++){
-            if(value.compare((this->columnNames[i] + 
-                             (string)(this->rowNames[j]))) == 0){
+            tempname = this->columnNames[i];
+            tempname = tempname + this->rowNames[j];
+            if(value.compare(tempname) == 0){
                 return Matrix<C>::reach(j , i);
             }
         }
@@ -964,10 +982,14 @@ C Table<C>::itemAt(string value){
 
 template <class C>
 C Table<C>::itemAt(string row , string column){
+    string tempRowName;
+    string tempColumnName;
     for(int i = 0; i < this->TableRow ; i++){
-        if(row.compare((string)(this->rowNames[i])) == 0){
+        tempRowName = this->rowNames[i];
+        if(row.compare(tempRowName) == 0){
             for(int j = 0; j < this->TableColumn ; j++){
-                if(column.compare(this->columnNames[j]) == 0){
+                tempColumnName = this->columnNames[j];
+                if(column.compare(tempColumnName) == 0){
                     return Matrix<C>::reach(j , i);
                 }
             }
@@ -977,34 +999,34 @@ C Table<C>::itemAt(string row , string column){
 
 template <class C>
 void Table<C>::setRowNames(string rnames[] , int arrayLength){
-    delete this->rowNames;
+    delete[] this->rowNames;
     this->rowNames = rnames;
     this->TableRow = arrayLength;
 }
 
 template <class C>
 void Table<C>::setColNames(string cnames[] , int arrayLength){
-    delete this->columnNames;
+    delete[] this->columnNames;
     this->columnNames = cnames;
     this->TableColumn = arrayLength;
 }
 
 template <class C>
 void Table<C>::print(){
-    cout << "        ";
-    cout << setw(5);
+    cout << endl << "       ";
+    string tempColumnNames;
+    string tempRowNames;
     for(int i = 0; i < this->TableColumn ; i++){
-        cout << this->columnNames[i].substr(0 , 4);
+        tempColumnNames = this->columnNames[i];
+        cout << setw(5) << tempColumnNames.substr(0 , 4);
     }
     cout << endl;
     for(int i = 0; i < this->TableRow ; i++){
-        cout << setw(8);
-        string elem = (string)(this->rowNames);
-        cout << elem.substr(0 , 8);
-        cout << setw(5);
+        tempRowNames = this->rowNames[i];
+        cout << setw(8) << tempRowNames.substr(0 , 8);
         for(int j = 0; j < this->TableColumn ; j++){
-            cout << Matrix<C>::reach(i , j);
+            cout << setw(5) << Matrix<C>::reach(i , j);
         }
+        cout << endl;
     }
-    cout << setw(0);
 }
